@@ -7,7 +7,11 @@
  *
  * Learn more at https://developers.cloudflare.com/workers/
  */
-import ical, { ICalEventRepeatingFreq, ICalRepeatingOptions } from "ical-generator";
+import ical, {
+    ICalEventRepeatingFreq,
+    ICalRepeatingOptions,
+    ICalCalendarMethod,
+} from "ical-generator";
 
 export interface Env {
 }
@@ -23,28 +27,28 @@ export default {
         if (url.pathname === "/") {
             const currentParams = new URLSearchParams(url.search);
             const calendar = ical({name: "calendar"});
-            const startDate = currentParams.get("startDate")
-            const endDate = currentParams.get("endDate")
-            const startTime = currentParams.get("startTime") || ''
-            const endTime = currentParams.get("endTime") || ""
+            calendar.method(ICalCalendarMethod.REQUEST);
+
+            const start = currentParams.get("start")
+            const end = currentParams.get("end")
+            const isAllDay = currentParams.get("allDay") === 'true';
             const title = currentParams.get("title");
             const description = currentParams.get("description") || "";
             const where = currentParams.get("where") || "";
             const repeats = currentParams.get("repeats") as ICalEventRepeatingFreq || undefined;
             const customRepeatFrequency = currentParams.get("customRepeatFrequency") || undefined;
 
-            if (!startDate || !endDate || !title) {
+            if (!start || !end || !title) {
                 return new Response("Missing required parameters");
             }
 
-            const isAllDay = !startTime || !endTime;
             const whereIsURL = isURL(where);
 
             const determinedFreq = parseFrequency(repeats, customRepeatFrequency);
 
             const event = calendar.createEvent({
-                start: isAllDay ? new Date(startDate) : new Date(`${startDate} ${startTime}`),
-                end: isAllDay ? new Date(endDate) : new Date(`${endDate} ${endTime}`),
+                start:  new Date(start),
+                end: new Date(end),
                 allDay: isAllDay,
                 summary: title,
                 url: whereIsURL ? where : undefined,
